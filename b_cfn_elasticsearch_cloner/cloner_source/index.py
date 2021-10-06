@@ -84,14 +84,14 @@ def get_sm_features(source: str, sagemaker_client: Any, endpoint_name: str) -> D
         Body=source.encode(encoding='utf-8'),
         ContentType='text/plain'
     )
+    logger.info('Sagemaker endpoint response received.')
     source_features = json.loads(sagemaker_response['Body'].read().decode())
     return source_features
 
 
 def get_embeddings(source: str) -> List[float]:
-    logger.info(f'Performing embeddings.')
-    source_features = get_sm_features(
-        source, sagemaker_client=sagemaker_client, endpoint_name=SAGEMAKER_ENDPOINT_NAME)
+    logger.info('Performing embeddings.')
+    source_features = get_sm_features(source, sagemaker_client=sagemaker_client, endpoint_name=SAGEMAKER_ENDPOINT_NAME)
     embeddings = source_features[SAGEMAKER_EMBEDDINGS_KEY]
     return embeddings
 
