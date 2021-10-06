@@ -1,5 +1,6 @@
 from typing import Optional
 
+import boto3
 from aws_cdk.aws_dynamodb import Table
 from aws_cdk.aws_iam import Effect, PolicyDocument, PolicyStatement, Role, ServicePrincipal
 from aws_cdk.aws_kms import Key
@@ -25,7 +26,10 @@ class ElasticsearchCloner(Construct):
     :param embeddings_key: Elasticsearch mapping properties name (field name),
         where knn dense vector of sentence embeddings are stored.
     :param sagemaker_endpoint_name: The name of Sagemaker inference endpoint used to provide NLP features.
+    :param sagemaker_endpoint_arn: Optional. SageMaker inference endpoint ARN. By default it is resolved
+        automatically with via ``sagemaker_endpoint_name`` parameter.
     :param sagemaker_embeddings_key: Key under which embeddings are received in Sagemaker response.
+
     """
 
     def __init__(
@@ -35,9 +39,10 @@ class ElasticsearchCloner(Construct):
         elasticsearch_index: ElasticsearchIndexResource,
         dynamodb_table: Table,
         kms_key: Optional[Key] = None,
+        *,
         sagemaker_endpoint_name: str = None,
-        sagemaker_embeddings_key: str = None,
-        sagemaker_arn: str = None
+        sagemaker_endpoint_arn: str = None,
+        sagemaker_embeddings_key: str = None
     ) -> None:
         super().__init__(scope=scope, id=id)
 
@@ -49,6 +54,9 @@ class ElasticsearchCloner(Construct):
                 f'SAGEMAKER_ENDPOINT_NAME, SAGEMAKER_EMBEDDINGS_KEY. '
                 f'Else provide none of above.'
             )
+
+        if sagemaker_endpoint_name and not sagemaker_endpoint_arn:
+            sagemaker_endpoint_arn = self.__resolve_sagemaker_endpoint_arn(sagemaker_endpoint_name)
 
         optional_sagemaker_parameters = {
             'SAGEMAKER_ENDPOINT_NAME': sagemaker_endpoint_name or None,
@@ -202,14 +210,14 @@ class ElasticsearchCloner(Construct):
             ),
         }
 
-        if sagemaker_arn:
+        if sagemaker_endpoint_arn:
             cloner_inline_policies['SagemakerPolicy'] = PolicyDocument(
                 statements=[
                     PolicyStatement(
                         actions=[
                             'sagemaker:InvokeEndpoint'
                         ],
-                        resources=[sagemaker_arn],
+                        resources=[sagemaker_endpoint_arn],
                         effect=Effect.ALLOW
                     )
                 ]
@@ -250,5 +258,12 @@ class ElasticsearchCloner(Construct):
                     actions=['kms:Decrypt'],
                     resources=[kms_key.key_arn],
                     effect=Effect.ALLOW,
-                ),
+                )
             )
+
+    @staticmethod
+    def __resolve_sagemaker_endpoint_arn(endpoint_name: str) -> str:
+        sts_client = boto3.client('sts')
+        region = sts_client.meta.region_name
+        account = sts_client.get_caller_identity()['Account']
+        return f'arn:aws:sagemaker:{region}:{account}:endpoint/{endpoint_name.lower()}'

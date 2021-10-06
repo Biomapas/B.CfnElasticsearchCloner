@@ -27,6 +27,11 @@ setup(
     long_description_content_type="text/markdown",
     include_package_data=True,
     install_requires=[
+        "b-elasticsearch-layer>=0.0.1,<1.0.0",
+        "b-cfn_elasticsearch-index>=0.0.3,<1.0.0",
+
+        "boto3>=1.18.0,<2.0.0",
+
         "aws-cdk.core>=1.54.0,<2.0.0",
         "aws-cdk.aws_lambda>=1.54.0,<2.0.0",
         "aws-cdk.aws_elasticsearch>=1.54.0,<2.0.0",
@@ -34,8 +39,6 @@ setup(
         "aws-cdk.aws_logs>=1.54.0,<2.0.0",
         "aws-cdk.aws_kms>=1.54.0,<2.0.0",
         "aws-cdk.aws_iam>=1.54.0,<2.0.0",
-        "b_elasticsearch_layer>=0.0.1,<1.0.0",
-        "b_cfn_elasticsearch_index>=0.0.3,<1.0.0",
     ],
     author="Ignas Kiela",
     author_email="ignas.kiela@biomapas.com",
