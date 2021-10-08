@@ -23,8 +23,6 @@ class ElasticsearchCloner(Construct):
     Updates the cloner on settings change.
     Deletes the cloner on stack deletion.
 
-    :param embeddings_key: Elasticsearch mapping properties name (field name),
-        where knn dense vector of sentence embeddings are stored.
     :param sagemaker_endpoint_name: The name of Sagemaker inference endpoint used to provide NLP features.
     :param sagemaker_endpoint_arn: Optional. SageMaker inference endpoint ARN. By default it is resolved
         automatically with via ``sagemaker_endpoint_name`` parameter.
@@ -52,11 +50,11 @@ class ElasticsearchCloner(Construct):
             raise ValueError(
                 f'In order to use sentence embedding, all of the following enviroment variables are required: '
                 f'SAGEMAKER_ENDPOINT_NAME, SAGEMAKER_EMBEDDINGS_KEY. '
-                f'Else provide none of above.'
+                f'Else, provide none of above.'
             )
 
         if sagemaker_endpoint_name and not sagemaker_endpoint_arn:
-            sagemaker_endpoint_arn = self.__resolve_sagemaker_endpoint_arn(sagemaker_endpoint_name)
+            sagemaker_endpoint_arn = self.__resolve_sagemaker_endpoints_arn('*')
 
         optional_sagemaker_parameters = {
             'SAGEMAKER_ENDPOINT_NAME': sagemaker_endpoint_name or None,
@@ -262,8 +260,8 @@ class ElasticsearchCloner(Construct):
             )
 
     @staticmethod
-    def __resolve_sagemaker_endpoint_arn(endpoint_name: str) -> str:
+    def __resolve_sagemaker_endpoints_arn(endpoint_name: str) -> str:
         sts_client = boto3.client('sts')
         region = sts_client.meta.region_name
         account = sts_client.get_caller_identity()['Account']
-        return f'arn:aws:sagemaker:{region}:{account}:endpoint/{endpoint_name.lower()}'
+        return f'arn:aws:sagemaker:{region}:{account}:endpoint/{endpoint_name}'
